@@ -7,6 +7,8 @@ def wirte_key():
     with open('crypto.key','wb') as key_file:
         key_file.write(key)
 
+def path_to_key(path):
+    return open(path,'rb').read()
 
 def load_key():
     return open('crypto.key','rb').read()
@@ -92,7 +94,10 @@ while flag.lower():
                 decrypt(file_name,load_key())
                 print("Файл расшифрован!")
         elif generate_key=='y':
-            encrypt(load_key(),file_name)
+            input_path =input(r'введите путь до ключа')
+            print(input_path)
+            encrypt(path_to_key(input_path),file_name)
+
             for i in range(5):
                 time.sleep(2)
                 print('Процесс расшифровки',_*i)
