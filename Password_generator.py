@@ -1,7 +1,8 @@
+from os import write
 import random
 import time
 from cryptography.fernet import Fernet
-
+from alive_progress import alive_bar
 
 def input_len():
     len_pass = 0
@@ -64,13 +65,16 @@ def ask_crypt(filename):
         generate_key = input('!!!___ВВЕДИТЕ "Y" ИЛИ "N" ')
     _ = '.'
     if generate_key == 'n':
-        for i in range(5):
-            time.sleep(2)
-            print(f'Ключ создается{_ * i}')
+        with alive_bar(100) as bar:
+            for i in range(100):
+                bar()
+                time.sleep(.07)
+            # print(f'Ключ создается{_ * i}')
         wirte_key()
         print("Ключ создан")
         encrypt(load_key(), filename)
         print('файл зашифрован!')
+        
     else:
         while True:
             input_path = input(r'введите путь до ключа')
@@ -120,6 +124,13 @@ def encrypt(key, filename):
     with open(filename, 'wb') as file:
         file.write(encrypted_data)
 
+def choice_encrypt(files,key):
+    f = Fernet(key)
+    with open(files, 'rb') as file:
+        file_data = file.read()
+        encrypted_data = f.encrypt(file_data)
+    with open(files, 'wb') as file:
+        file.write(encrypted_data)
 
 def decrypt(filename, key):
     f = Fernet(key)
@@ -174,5 +185,14 @@ if __name__ == '__main__':
             except Exception as err:
                 print('ВОЗНИКЛА ОШИБКА ЧТЕНИЯ КЛЮЧА,ЛИБО ФАЙЛ НЕ ЗАШИФРОВАН!!!\n')
                 print(f'ВОТ ВАША ОШИБКА: {err}')
+        elif hello == '5':
+            name = input('Введите название файла, или вставьте путь до файла')
+            try:
+                wirte_key()
+                time.sleep(1)
+                key = load_key()
+                choice_encrypt(name,key)
+            except Exception as err:
+                print(f'ВОЗНИКЛА ОШИБКА,ПРОВЕРЬТЕ ВВЕДЕННЫЕ ДАННЫЕ \n{err}')
 
 main()
