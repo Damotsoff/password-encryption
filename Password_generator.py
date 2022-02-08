@@ -144,7 +144,7 @@ def decrypt(filename, key):
 
 
 def load_key_decrypt():
-    key = input('введите путь к ключу')
+    key = input('введите путь к ключу...')
     return open(key, 'rb').read()
 
 
@@ -192,12 +192,13 @@ if __name__ == '__main__':
                 print('ВОЗНИКЛА ОШИБКА ЧТЕНИЯ КЛЮЧА,ЛИБО ФАЙЛ НЕ ЗАШИФРОВАН!!!\n')
                 print(f'ВОТ ВАША ОШИБКА: {err}')
         elif hello == '5':
-            name = input('Введите название файла, или вставьте путь до файла')
+            name = input('Введите название файла, или вставьте путь до файла>>> ')
             try:
                 wirte_key()
                 time.sleep(1)
                 key = load_key()
                 choice_encrypt(name,key)
+                print('Готово! Файл зашифрован!Сохраните свой ключ ,он понадобится для дальнейшей расшифровки!')
             except Exception as err:
                 print(f'ВОЗНИКЛА ОШИБКА,ПРОВЕРЬТЕ ВВЕДЕННЫЕ ДАННЫЕ \n{err}')
 
