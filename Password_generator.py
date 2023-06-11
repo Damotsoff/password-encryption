@@ -1,205 +1,159 @@
-
 import random
+import string
 import time
 from cryptography.fernet import Fernet
 from alive_progress import alive_bar
 
-def input_len():
-    len_pass = 0
 
-    while len_pass <= 0:
-        try:
-            len_pass = int(input('ВВЕДИТЕ ЖЕЛАЕМУЮ ДЛИНУ ПАРОЛЯ  \nВВЕДИТЕ ЧИСЛО>>>>  '))
-        except Exception as err:
-            print(err)
-            print('!!!____Введен НЕВЕРНЫЙ формат данных,введите ЧИСЛО___!!!')
-    return len_pass
+class PasswordGenerator:
+    def __init__(self, length, count):
+        self.length = length
+        self.count = count
 
-
-def input_count():
-    count = 0
-    while count <= 0:
-        try:
-            count = int(input('ВВЕДИТЕ НУЖНОЕ КОЛИЧЕСТВО ПАРОЛЕЙ>>>>   '))
-        except Exception as err:
-            print(err)
-            print('!!!____Введен НЕВЕРНЫЙ формат данных,введите ЧИСЛО___!!!')
-    return count
+    def generate_passwords(self):
+        characters = string.ascii_letters + string.digits + string.punctuation
+        passwords = []
+        for _ in range(self.count):
+            password = ''.join(random.choice(characters) for _ in range(self.length))
+            passwords.append(password)
+        return passwords
 
 
-def create_password(count, lenpass):
-    test = list('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&()')
-    i = 0
-    password = ''
-    password_list = list()
-    while i <= count - 1:
-        for x in range(lenpass):
-            password += random.choice(test)
-        password_list.append(password)
-        password = ''
-        i += 1
-    return password_list
+class PasswordManager:
+    def __init__(self):
+        self.generator = PasswordGenerator(12, 10)  # Параметры генерации паролей по умолчанию
 
+    def set_password_generator(self, length, count):
+        self.generator = PasswordGenerator(length, count)
 
-def ask_write_to_file(passwords):
-    p_count = time.ctime()
-    file_name = p_count.strip(' ') + '.txt'
-    for p in passwords:
-        with open(file_name, 'a') as file:
-            file.writelines(p + ' \n')
-    print('ПАРОЛИ СГЕНЕРИРОВАНЫ!!!')
-    time.sleep(1.5)
-    return file_name
-
-
-def no_write(passwords):
-    str_count = 0
-    for p in passwords:
-        str_count += 1
-        print(f'Ваш {str_count}-й пароль : {p}')
-
-
-def ask_crypt(filename):
-    generate_key = input('У Вас есть ключ шифрования? "y" or "n"')
-    while generate_key.lower() != 'n' and generate_key.lower() != 'y':
-        generate_key = input('!!!___ВВЕДИТЕ "Y" ИЛИ "N" ')
-    _ = '.'
-    if generate_key == 'n':
-        with alive_bar(100) as bar:
-            for i in range(100):
-                bar()
-                time.sleep(.07)
-            # print(f'Ключ создается{_ * i}')
-        wirte_key()
-        print("Ключ создан")
-        encrypt(load_key(), filename)
-        print('файл зашифрован!')
-        
-    else:
+    def input_password_length(self):
         while True:
-            input_path = input('ВВЕДИТЕ ПУТЬ ДО КЛЮЧА>>>\n')
             try:
-                encrypt(path_to_key(input_path), filename)
-                with alive_bar(100) as bar:
-                    for i in range(100):
-                        bar()
-                        time.sleep(.07)
-                    print('OK')
-                    print('Файл зашифрован')
+                length = int(input('Введите желаемую длину пароля: '))
+                if length <= 0:
+                    print('Длина пароля должна быть положительным числом!')
+                else:
+                    return length
+            except ValueError:
+                print('Неверный формат данных! Введите целое число.')
+
+    def input_password_count(self):
+        while True:
+            try:
+                count = int(input('Введите нужное количество паролей: '))
+                if count <= 0:
+                    print('Количество паролей должно быть положительным числом!')
+                else:
+                    return count
+            except ValueError:
+                print('Неверный формат данных! Введите целое число.')
+
+    def generate_passwords(self):
+        length = self.input_password_length()
+        count = self.input_password_count()
+        self.set_password_generator(length, count)
+        passwords = self.generator.generate_passwords()
+        return passwords
+
+
+class FileManager:
+    @staticmethod
+    def write_passwords_to_file(passwords):
+        timestamp = time.strftime('%Y%m%d-%H%M%S')
+        file_name = f'passwords_{timestamp}.txt'
+        with open(file_name, 'w') as file:
+            for password in passwords:
+                file.write(password + '\n')
+        print('Пароли сохранены в файле:', file_name)
+
+    @staticmethod
+    def generate_encryption_key():
+        key = Fernet.generate_key()
+        with open('encryption.key', 'wb') as key_file:
+            key_file.write(key)
+        print('Сгенерирован ключ шифрования.')
+
+    @staticmethod
+    def load_encryption_key():
+        try:
+            with open('encryption.key', 'rb') as key_file:
+                key = key_file.read()
+            return key
+        except FileNotFoundError:
+            print('Файл ключа шифрования не найден.')
+            return None
+
+    @staticmethod
+    def encrypt_file(key, filename):
+        if key is None:
+            print('Отсутствует ключ шифрования. Сначала сгенерируйте ключ.')
+            return
+        f = Fernet(key)
+        with open(filename, 'rb') as file:
+            file_data = file.read()
+            encrypted_data = f.encrypt(file_data)
+        with open(filename, 'wb') as file:
+            file.write(encrypted_data)
+        print('Файл успешно зашифрован.')
+
+    @staticmethod
+    def decrypt_file(key, filename):
+        if key is None:
+            print('Отсутствует ключ шифрования. Сначала сгенерируйте ключ.')
+            return
+        f = Fernet(key)
+        with open(filename, 'rb') as file:
+            encrypted_data = file.read()
+            decrypted_data = f.decrypt(encrypted_data)
+        with open(filename, 'wb') as file:
+            file.write(decrypted_data)
+        print('Файл успешно расшифрован.')
+
+
+class PasswordManagerApp:
+    def __init__(self):
+        self.password_manager = PasswordManager()
+        self.file_manager = FileManager()
+
+    @staticmethod
+    def display_passwords(passwords):
+        for password in passwords:
+            print(password)
+
+    def run(self):
+        print('Добро пожаловать в Password Manager!')
+        print('Это приложение позволяет генерировать пароли и шифровать/расшифровывать файлы.')
+        while True:
+            print('Меню:')
+            print('1: Генерация паролей')
+            print('2: Зашифровать файл')
+            print('3: Расшифровать файл')
+            print('0: Выход')
+
+            choice = input('Ваш выбор: ')
+            if choice == '1':
+                passwords = self.password_manager.generate_passwords()
+                print('Сгенерированные пароли:')
+                self.display_passwords(passwords)
+                self.file_manager.write_passwords_to_file(passwords)
+            elif choice == '2':
+                filename = input('Введите имя файла для шифрования: ')
+                self.file_manager.generate_encryption_key()
+                key = self.file_manager.load_encryption_key()
+                self.file_manager.encrypt_file(key, filename)
+                print('Файл успешно зашифрован.')
+            elif choice == '3':
+                filename = input('Введите имя файла для расшифровки: ')
+                key = self.file_manager.load_encryption_key()
+                self.file_manager.decrypt_file(key, filename)
+                print('Файл успешно расшифрован.')
+            elif choice == '0':
+                print('До свидания!')
                 break
-            except:
-                print('Извините ваш ключ не подходит,либо не найден!!!')
-
-
-def decrypt_file(filename, path):
-    _ = '.'
-    try:
-        open(path, 'rb').read()
-        for i in range(5):
-            time.sleep(2)
-            print('Процесс расшифровки', _ * i)
-        decrypt(filename, path)
-        print("Файл расшифрован!")
-    except:
-        print('Извините ключ не найден!')
-
-
-def wirte_key():
-    key = Fernet.generate_key()
-    with open('crypto.key', 'wb') as key_file:
-        key_file.write(key)
-
-
-def path_to_key(path):
-    return open(path, 'rb').read()
-
-
-def load_key():
-    return open('crypto.key', 'rb').read()
-
-
-def encrypt(key, filename):
-    f = Fernet(key)
-    with open(filename, 'rb') as file:
-        file_data = file.read()
-        encrypted_data = f.encrypt(file_data)
-    with open(filename, 'wb') as file:
-        file.write(encrypted_data)
-
-def choice_encrypt(files,key):
-    f = Fernet(key)
-    with open(files, 'rb') as file:
-        file_data = file.read()
-        encrypted_data = f.encrypt(file_data)
-    with open(files, 'wb') as file:
-        file.write(encrypted_data)
-
-def decrypt(filename, key):
-    f = Fernet(key)
-    with open(filename, 'rb') as file:
-        encrypted_data = file.read()
-    decrypted_data = f.decrypt(encrypted_data)
-    with open(filename, 'wb') as file:
-        file.write(decrypted_data)
-
-
-def load_key_decrypt():
-    key = input('введите путь к ключу...')
-    return open(key, 'rb').read()
+            else:
+                print('Неверный выбор. Пожалуйста, выберите существующую опцию.')
 
 
 if __name__ == '__main__':
-    def main():
-        a ='''\t|ПРИВЕТ ,ЭТА ПРОГРАММА ПОМОЖЕТ ТЕБЕ СГЕНЕРИРОВАТЬ НАДЕЖНЫЕ            |
- \t|ПАРОЛИ ПО ТВОИМ ПРЕДПОЧТЕНИЯМ,ТАКЖЕ ИХ БУДЕТ ВОЗМОЖНО ЗАШИФРОВАТЬ    |
- \t|В ФАЙЛ, ПОСЛЕ ИХ МОЖНО РАСШИФРОВАТЬ.                                 |  
-        |                                                                     |
-        |                    ВЫБЕРИТЕ НУЖНЫЙ ВАМ РЕЖИМ:                       |
-        | --- 1: СГЕНЕРИРОВАТЬ ПАРОЛИ И ПРОСТО ВЫВЕСТИ ИХ НА ЭКРАН ---        |
-        |--- 2: СГНЕНЕРИРОВАТЬ ПАРОЛИ И ЗАПИСАТЬ В ФАЙЛ ---                   |
-        |--- 3: СГНЕНЕРИРОВАТЬ ПАРОЛИ И ЗАПИСАТЬ В ФАЙЛ, ПОСЛЕ ЗАШИФРОВАТЬ--- |
-        |--- 4: РАСШИФРОВАТЬ ФАЙЛ ---                                         |
-        |--- 5: ШИФРОВАТЬ СОБСТВЕННЫЙ ФАЙЛ ---                                |'''
-        print(a)
-        hello = input('ВВЕДИТЕ НОМЕР---> ')
-        if hello == '1':
-            len_password = input_len()
-            count = input_count()
-            get_list_password = create_password(count, len_password)
-            ask_write = no_write(get_list_password)
-            return ask_write
-        elif hello == '2':
-            len_password = input_len()
-            count = input_count()
-            get_list_password = create_password(count, len_password)
-            ask_write = ask_write_to_file(get_list_password)
-            return ask_write
-        elif hello == '3':
-            len_password = input_len()
-            count = input_count()
-            get_list_password = create_password(count, len_password)
-            ask_write = ask_write_to_file(get_list_password)
-            crypt_file = ask_crypt(ask_write)
-            return crypt_file
-        elif hello == '4':
-            name = input('Введите название файла...  ')
-            try:
-                load_path_to_key = load_key_decrypt()
-                decrypt(name, load_path_to_key)
-                print('ФАЙЛ РАСШИФРОВАН!!!')
-                time.sleep(1.5)
-            except Exception as err:
-                print('ВОЗНИКЛА ОШИБКА ЧТЕНИЯ КЛЮЧА,ЛИБО ФАЙЛ НЕ ЗАШИФРОВАН!!!\n')
-                print(f'ВОТ ВАША ОШИБКА: {err}')
-        elif hello == '5':
-            name = input('Введите название файла, или вставьте путь до файла>>> ')
-            try:
-                wirte_key()
-                time.sleep(1)
-                key = load_key()
-                choice_encrypt(name,key)
-                print('Готово! Файл зашифрован!Сохраните свой ключ ,он понадобится для дальнейшей расшифровки!')
-            except Exception as err:
-                print(f'ВОЗНИКЛА ОШИБКА,ПРОВЕРЬТЕ ВВЕДЕННЫЕ ДАННЫЕ \n{err}')
-
-main()
+    app = PasswordManagerApp()
+    app.run()

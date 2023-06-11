@@ -1,0 +1,6 @@
+about-time==4.2.1
+alive-progress==3.1.4
+cffi==1.15.1
+cryptography==41.0.1
+grapheme==0.6.0
+pycparser==2.21
